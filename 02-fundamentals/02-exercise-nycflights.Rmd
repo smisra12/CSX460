@@ -1,6 +1,6 @@
 ---
 title: "Assingment NYC Flight Data"
-author: "Your Name Here"
+author: "Shibani Misra"
 date: "October 5, 2016"
 output: html_document
 ---
@@ -13,11 +13,26 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Your job is to create a "rectangular" table useful for modeling from flight data. In the folder `02-fundamentals/data` there are four CSV files: `flights.csv`, `airports.csv`, `planes.csv` and `weather.csv`.  Put code in each of the sections provided.
 
+
+<!-- install.packages("readr") -->
+<!-- install.packages("ggplot2") -->
+<!-- install.packages("dplyr") -->
+<!-- install.packages("gmodels") -->
+
+
 ## 1. Read Data
 
 Using the `readr` package read the `flights` data.
 
 ```{r}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(gmodels)
+options(stringsAsFactors = FALSE)
+setwd("C:/Users/smisra/tmp/CSX460/02-fundamentals")
+flights<- read.csv("flights.csv")
+
 
 
 ```
@@ -27,7 +42,12 @@ Using the `readr` package read the `flights` data.
 Plot a histogram of arrival delays and departure delays 
 
 ```{r}
-
+ggplot(flights, aes(x=dep_delay)) +
+  geom_histogram(binwidth = 10) +
+  coord_cartesian(xlim=c(0, 300))
+ggplot(flights, aes(x = arr_delay)) +
+  geom_histogram(binwidth = 10) +
+  coord_cartesian(xlim=c(0, 300))
 ```
 
 ## Scatterplot
@@ -35,6 +55,12 @@ Plot a histogram of arrival delays and departure delays
 Plot a scatterplot of date vs arrival delay 
 
 ```{r}
+flights <- flights %>% 
+  mutate(flight_date = as.Date(time_hour),
+         time_hour1 = as.character(time_hour))
+
+ggplot(flights, aes(x = flight_date, y = arr_delay)) +
+  geom_point()
 
 ```
 
@@ -45,7 +71,8 @@ Plot a scatterplot of date vs arrival delay
 Create a `table` of occurences of origin airports and carrier.
 
 ```{r}
-
+table(flights$origin)
+table(flights$carrier)
 
 ```
 
@@ -55,6 +82,20 @@ Create a `table` of occurences of origin airports and carrier.
 **Read** in the other data sets. Use methods to join the data together to create a single table containing one record per row.  (HINT: see `?data.table` or `?dplyr::join`)
 
 ```{r}
+airports <- read.csv("airports.csv")
+planes <- read.csv("planes.csv")
+weather <- read.csv("weather.csv")
+
+flights_wPlaneInfo <- flights %>% 
+  left_join(planes, by = c("tailnum")) 
+
+
+flights_WeatherInfo <- flights_wPlaneInfo %>% 
+  left_join(weather, by = c("origin", "time_hour1" = "time_hour")) %>% 
+  select(year.x, month.x, day.x, dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time, arr_delay, carrier, flight, tailnum, origin, dest, distance, hour.x, minute, time_hour, flight_date, type, manufacturer, model, engines, seats, speed, engine)
+
+flights_wOtherInfo <- flights_WeatherInfo %>% 
+  left_join(airports, by = c("dest" = "faa"))
 
 ```
 
