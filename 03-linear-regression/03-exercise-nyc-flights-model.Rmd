@@ -1,12 +1,16 @@
 ---
 title: "NYCFlights: Arrival Delay Regression Model"
-author: "[Your Name]"
-date: "[Today's Date]"
+author: "[Shibani Misra]"
+date: "[10/18/2016]"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(psych)
+library(stats)
+library(dplyr)
+library(caret)
 ```
 
 # NYCFlights Model
@@ -18,6 +22,9 @@ for building a model. Describe/Explain each of the steps and show all work in co
 ## Step 1: Collect Data 
 
 ```{r "Step 1: Collect Data" }
+options(stringsAsFactors = FALSE)
+
+flights.mod <- read.csv("C:/Users/smisra/tmp/CSX460/03-linear-regression/flightDataWithOtherInfo.csv")
 
 ```
 
@@ -28,13 +35,34 @@ One of the things not done in the MLwR text is a pairwise comparison between the
 
 
 ```{r "Step 2: Explore and Prep The Data" }
+str(flights.mod)
 
+flights.mod <- flights.mod %>% 
+  filter(is.na(arr_delay)== FALSE)
+
+flights.additionalcols <- flights.mod  %>%
+mutate(season = ifelse(month.x %in% c(12,1,2), "Winter", ifelse(month.x %in% c(3,4,5), "Spring", ifelse(month.x %in% c(6,7,8), "Summer", "Fall"))), headwind = cos(wind_dir) * wind_speed, 
+       wday = weekdays(as.Date(flight_date))) %>% 
+mutate(season = as.factor(season), wday = as.factor(wday), headwind = abs(headwind))
+
+pairs(flights.additionalcols[c("dep_delay", "wind_gust", "headwind", "precip", "arr_delay")])
+
+pairs.panels(flights.additionalcols[c("dep_delay", "wind_gust", "headwind", "season", "wday", "precip", "arr_delay")])
+
+trainIndex <- createDataPartition(flights.additionalcols$arr_delay, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+
+flightTrain <- flights.additionalcols[ trainIndex,]
+flightTest  <- flights.additionalcols[-trainIndex,]
 ```
 
 ## Step 3:  Train The Model
 
 ```{r "Step 3: Train The Model" }
-
+flights.model <- lm(arr_delay ~ dep_delay + wind_gust + headwind + season + wday + precip, data = 
+                      flightTrain)
+summary(flights.model)
 ```
 
 ## Step 4: Evaluate Performance
@@ -42,6 +70,7 @@ One of the things not done in the MLwR text is a pairwise comparison between the
 Evaluating performance is a crutial step, that has yet to be treated well by the MLwR. Think about some of the tools that you have for evaluating performance.  Choose one and articulate why you have chosen it.
 
 ```{r "Step 4: Evaluate Performance" }
+flights.predict <- predict(flights.model, flightTest)
 
 ```
 
@@ -58,4 +87,4 @@ Show some steps for improving model performance.
 # Question:
 
 Is this a good model?  (Write your answer here.)
-
+It is  an OK model with a good adjusted R-square and pretty significant independent factors. Could have used some more time to evaluate and improve it.

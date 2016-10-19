@@ -30,7 +30,7 @@ library(ggplot2)
 library(dplyr)
 library(gmodels)
 options(stringsAsFactors = FALSE)
-setwd("C:/Users/smisra/tmp/CSX460/02-fundamentals")
+setwd("C:/Users/smisra/tmp/CSX460/02-fundamentals/data")
 flights<- read.csv("flights.csv")
 
 
@@ -92,11 +92,11 @@ flights_wPlaneInfo <- flights %>%
 
 flights_WeatherInfo <- flights_wPlaneInfo %>% 
   left_join(weather, by = c("origin", "time_hour1" = "time_hour")) %>% 
-  select(year.x, month.x, day.x, dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time, arr_delay, carrier, flight, tailnum, origin, dest, distance, hour.x, minute, time_hour, flight_date, type, manufacturer, model, engines, seats, speed, engine)
+  select(year.x, month.x, day.x, dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time, arr_delay, carrier, flight, tailnum, origin, dest, distance, hour.x, minute, time_hour, flight_date, type, manufacturer, model, engines, seats, speed, engine, temp, dewp, humid, wind_dir, wind_speed, wind_gust, precip, pressure, visib)
 
 flights_wOtherInfo <- flights_WeatherInfo %>% 
   left_join(airports, by = c("dest" = "faa"))
-
+write.csv(flights_wOtherInfo, "flightDataWithOtherInfo.csv")
 ```
 
 
