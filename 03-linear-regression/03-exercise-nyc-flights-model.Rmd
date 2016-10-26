@@ -60,7 +60,7 @@ flightTest  <- flights.additionalcols[-trainIndex,]
 ## Step 3:  Train The Model
 
 ```{r "Step 3: Train The Model" }
-flights.model <- lm(arr_delay ~ dep_delay + wind_gust + headwind + season + wday + precip, data = 
+flights.model <- lm(arr_delay ~ dep_delay + wind_gust + season + wday + precip, data = 
                       flightTrain)
 summary(flights.model)
 ```
@@ -71,7 +71,7 @@ Evaluating performance is a crutial step, that has yet to be treated well by the
 
 ```{r "Step 4: Evaluate Performance" }
 flights.predict <- predict(flights.model, flightTest)
-
+diff <- as.data.frame(flightTest$arr_delay - as.data.frame(flights.predict))
 ```
 
 

@@ -1,7 +1,7 @@
 ---
 title: "NYCFlights: Arrival Delay Logictic Model"
-author: "[Your Name]"
-date: "[Today's Date]"
+author: "Shibani Misra"
+date: "10/24/2016"
 output: html_document
 ---
 
@@ -10,20 +10,50 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## Logsitic and Inverse Logistic Transformation 
+# Logsitic and Inverse Logistic Transformation
 
 - Write an R function for the logistic function. The function should accept a `numeric` vector with values `[-Inf,Inf]` and produce a numeric vector in the the range `[0,1]`.
 
+```{r "Logistic Function" }
+getp <- function(y) {
+  exp(y)/(1+exp(y))
+}
+```
 - Plot the logistic function from  `[-10,10]`
+
+```{r "Plot logistic function"}
+theta_lr <- sample(-10:10, 10, replace=FALSE)
+
+resp.prob <-  as.data.frame(unlist(lapply(theta_lr, getp)))
+df <- cbind(as.data.frame(theta_lr),resp.prob)
+
+ggplot(df, aes(x = theta_lr, y = resp.prob)) +
+  geom_point(alpha = 0.5)
+  
+```
 
 - Write a R function for the inverse logistic function. The function should accept a `numeric` vector with values `[0,1]` and prodcuce a numeric vector in the range `[-Inf,Inf]`
 
+```{r "R function for inverse logistic function"}
+inv_log <- function(p){
+  log(p/(1-p))
+}
+```
+
 - Plot the Inverse Logistic function from `[0,1]`
 
+```{r "Plot inverse logistic function"}
+inv_p <- as.data.frame(runif(21))
+theta <- as.data.frame(unlist(lapply(inv_p, inv_log)))
+df2 <- cbind(inv_p,theta)
+ggplot(df2, aes(x = inv_p, y = theta)) + geom_point(alpha = 0.5)
+
+```
 
 **Hint:** For plotting curves see `?graphics::curve` or `?ggplot2::stat_function`
 
 ```{r "Logistic and Inverse Logistic" }
+
 
 ```
 
@@ -47,13 +77,18 @@ One of the things not done in the MLwR text is a pairwise comparison between the
 
 
 ```{r "Step 2: Explore and Prep The Data" }
+flightTrain <- flightTrain %>% 
+  mutate(arr_delay_cat = ifelse(arr_delay >=15, 1,0))
+flightTest <- flightTest %>% 
+  mutate(arr_delay_cat = ifelse(arr_delay >=15, 1, 0))
 
 ```
 
 ## Step 3:  Train The Model
 
 ```{r "Step 3: Train The Model" }
-
+form <- arr_delay_cat ~ dep_delay + wind_gust + season + wday + precip
+flights.glm.model <- glm(form, data = flightTrain, family = binomial())
 ```
 
 ## Step 4: Evaluate Performance
@@ -61,6 +96,15 @@ One of the things not done in the MLwR text is a pairwise comparison between the
 Think about some of the tools that you have for evaluating performance.  Choose one and articulate why you have chosen it.
 
 ```{r "Step 4: Evaluate Performance" }
+summary(flights.glm.model)
+arr_delay_cat_pred <- as.data.frame(predict(flights.glm.model, type = "response"))
+colnames(arr_delay_cat_pred) <- c("predicted_arr_delay_prob")
+threshold = 0.5
+arr_delay_cat_pred <- arr_delay_cat_pred %>% 
+  mutate(predicted_arr_delay_01 =  ifelse(predicted_arr_delay_prob > 0.5, 1, 0))
+flightTrain <- flightTrain %>% 
+  filter(is.na(arr_delay) == FALSE)
+flightTrain <- cbind(flightTrain, arr_delay_cat_pred) 
 
 ```
 
@@ -77,9 +121,12 @@ Show some steps for improving model performance.
 # Question:
 
 Is this a good model?  (Write your answer here.)
-
+Couldn't check for model performance because for some reason the length of the predicted values 
+vector is not matching the actual response value vector.
 
 # PART B:
 
 Your model should be good at explaining tardiness. Now, assume that your job is to predict arrival delays a month in advance. You can no longer use all the features in your model. Retrain your model using only features that will be *known* only a month in advance of the departure time.  Show all steps as above.
-
+form2 <- arr_delay_cat ~ season + wday + origin + carrier
+flights.glm.model2 <- glm(form2, data = flightTrain, family = binomial())
+summary(flights.glm.model2)
