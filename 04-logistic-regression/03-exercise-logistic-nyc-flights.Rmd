@@ -1,5 +1,5 @@
 ---
-title: "NYCFlights: Arrival Delay Logictic Model"
+title: "NYCFlights: Arrival Delay Logistic Model"
 author: "Shibani Misra"
 date: "10/24/2016"
 output: html_document
@@ -7,10 +7,13 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(dplyr)
+library(caret)
 ```
 
 
-# Logsitic and Inverse Logistic Transformation
+# Logistic and Inverse Logistic Transformation
 
 - Write an R function for the logistic function. The function should accept a `numeric` vector with values `[-Inf,Inf]` and produce a numeric vector in the the range `[0,1]`.
 
@@ -67,7 +70,22 @@ KNIT YOUR DOCUMENT AS *HTML* AND SUBMIT IT AND THE `Rmd` file.
 ## Step 1: Collect Data 
 
 ```{r "Step 1: Collect Data" }
+options(stringsAsFactors = FALSE)
 
+flights.mod <- read.csv("C:/Users/smisra/tmp/CSX460/03-linear-regression/flightDataWithOtherInfo.csv")
+flights.mod <- flights.mod %>% 
+  filter(is.na(arr_delay)== FALSE)
+
+flights.additionalcols <- flights.mod  %>%
+mutate(season = ifelse(month.x %in% c(12,1,2), "Winter", ifelse(month.x %in% c(3,4,5), "Spring", ifelse(month.x %in% c(6,7,8), "Summer", "Fall"))), headwind = cos(wind_dir) * wind_speed, 
+       wday = weekdays(as.Date(flight_date))) %>% 
+mutate(season = as.factor(season), wday = as.factor(wday), headwind = abs(headwind))
+trainIndex <- createDataPartition(flights.additionalcols$arr_delay, p = .8, 
+                                  list = FALSE, 
+                                  times = 1)
+
+flightTrain <- flights.additionalcols[ trainIndex,]
+flightTest  <- flights.additionalcols[-trainIndex,]
 ```
 
 ## Step 2: Explore and Prep The Data
@@ -104,7 +122,7 @@ arr_delay_cat_pred <- arr_delay_cat_pred %>%
   mutate(predicted_arr_delay_01 =  ifelse(predicted_arr_delay_prob > 0.5, 1, 0))
 flightTrain <- flightTrain %>% 
   filter(is.na(arr_delay) == FALSE)
-flightTrain <- cbind(flightTrain, arr_delay_cat_pred) 
+
 
 ```
 
@@ -121,12 +139,16 @@ Show some steps for improving model performance.
 # Question:
 
 Is this a good model?  (Write your answer here.)
+
 Couldn't check for model performance because for some reason the length of the predicted values 
 vector is not matching the actual response value vector.
 
 # PART B:
 
 Your model should be good at explaining tardiness. Now, assume that your job is to predict arrival delays a month in advance. You can no longer use all the features in your model. Retrain your model using only features that will be *known* only a month in advance of the departure time.  Show all steps as above.
+
+```{r "Forecasting Model" }
 form2 <- arr_delay_cat ~ season + wday + origin + carrier
 flights.glm.model2 <- glm(form2, data = flightTrain, family = binomial())
 summary(flights.glm.model2)
+```
