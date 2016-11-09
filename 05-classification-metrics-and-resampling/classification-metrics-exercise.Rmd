@@ -15,7 +15,67 @@ The German Credit Data (data/german_credit);
 Show All Work! 
 
 ```{r}
+install.packages("ROCR")
+library(ROCR)
+flights_sample <- flights[sample(nrow(flights), 50000, replace = FALSE),]
+flights_sample <- flights_sample %>% 
+  mutate(carrier = as.factor(carrier),
+         tailnum = as.factor(tailnum),
+         origin = as.factor(origin),
+         dest = as.factor(dest), 
+         type = as.factor(type),
+         manufacturer = as.factor(manufacturer),
+         model = as.factor(model),
+         engine = as.factor(engine),
+         name = as.factor(name))
 
+Repeats <- 50
+cv_repeat_num <- Repeats/20
+results <- []
+results_naive <- []
+
+for (j_naive in 0:(cv_repeat_num -1)) {
+  cv_group <- sample(1:20, nrow(flights_sample), replace = T)
+  for (i_naive in 1:20) {
+   flightTrain <- flights_sample[cv_group != i_naive,]
+   flightTest <- flights_sample[cv_group == i_naive,] 
+   flights.full.model <- glm(arr_delay_cat ~ month.x + day.x + dep_time + sched_dep_time + dep_delay +   arr_time + sched_arr_time + flight  + origin + distance + hour.x + minute + type + engines + seats + speed  +
+                               temp + dewp + humid + wind_dir + wind_speed + wind_gust + precip + pressure + visib + lat + lon, data = flightTrain, family = binomial())
+   predict_full <- predict(flights.full.model, newdata = flightTest, type = "response")
+    pred_f <- prediction(predict_full, flightTest$arr_delay_cat)
+    auc_f <- performance(pred_f, measure = "auc")
+    if (i_naive == 1 & j_naive == 0) {
+      results_naive <- c(auc_f = auc_f@y.values[[1]])
+    }
+    else {
+    results_naive <- append(results_naive, c(auc_f = auc_f@y.values[[1]]), after = length(results_naive))
+    }
+   
+  }
+}
+
+for (j in 0:(cv_repeat_num -1)) {
+  cv_group <- sample(1:20, nrow(flights_sample), replace = T)
+  for (i in 1:20) {
+    flightTrain <- flights_sample[cv_group != i,]
+    flightTest <- flights_sample[cv_group == i,]
+    form <- arr_delay_cat ~ dep_delay + wind_gust + season + wday + precip
+    flights.my.model <- glm(form, data = flightTrain, family = binomial())
+    
+    predict_step <- predict(flights.my.model, newdata = flightTest, type = "response")
+    pred_s <- prediction(predict_step, flightTest$arr_delay_cat)
+    auc_s <- performance(pred_s, measure = "auc")
+    
+    if (i == 1 & j == 0) {
+      results <- c(auc_s = auc_s@y.values[[1]])
+    }
+    else {
+    results <- append(results, c(auc_s = auc_s@y.values[[1]]), after = length(results))
+    }
+   
+  }
+}
+cv_stat <- mean(results)
 
 ```
 
