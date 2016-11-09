@@ -77,6 +77,20 @@ for (j in 0:(cv_repeat_num -1)) {
 }
 cv_stat <- mean(results)
 
+threshold = 0.5
+flightTest <- flightTest %>% 
+  mutate(arr_delay_pred = ifelse(predict_step > 0.5, 1, 0))
+flightTest <- flightTest %>% 
+  mutate(TP = ifelse(arr_delay_cat == 1 & arr_delay_pred == 1, 1, 0),
+         FP = ifelse(arr_delay_cat == 0 & arr_delay_pred == 1, 1, 0),
+         TN = ifelse(arr_delay_cat == 0 & arr_delay_pred == 0, 1, 0), 
+         FN = ifelse(arr_delay_cat == 1 & arr_delay_pred == 0, 1, 0))
+pred = predict(flights.my.model, newdata=flightTest)
+accuracy <- table(pred, flightTest[,"arr_delay_cat"])
+sum(diag(accuracy))/sum(accuracy)
+
+confusionMatrix(data=pred, flightTest$arr_delay_cat)
+
 ```
 
 
