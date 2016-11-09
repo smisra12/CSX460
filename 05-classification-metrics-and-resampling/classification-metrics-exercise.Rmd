@@ -1,13 +1,13 @@
 ---
 title: "Classification Metrics"
-author: "Christopher Brown"
-date: 
+author: "Shibani Misra"
+date: "11/08/2016"
 output: html_document
 ---
 
-The German Credit Data (data/german_credit); 
+The Flights Data ; 
 
-1. Read in the German Credit Data
+1. Read in the Flights Data
 2. Partition the model into Test and Training Sets using only `base::sample` 
 3. Train a model for `Creditability` 
 4. Knit the document and submit both the this file Rmd and html files.
@@ -15,11 +15,16 @@ The German Credit Data (data/german_credit);
 Show All Work! 
 
 ```{r}
-install.packages("ROCR")
+library(dplyr)
+library(e1071)
+library(caret)
+library(ggplot2)
 library(ROCR)
-flights_sample <- flights[sample(nrow(flights), 50000, replace = FALSE),]
+load(file = "flights.Rda")
+flights_sample <- flights[sample(nrow(flights), 100000, replace = FALSE),]
 flights_sample <- flights_sample %>% 
-  mutate(carrier = as.factor(carrier),
+  mutate(arr_delay_cat = as.factor(arr_delay_cat),
+         carrier = as.factor(carrier),
          tailnum = as.factor(tailnum),
          origin = as.factor(origin),
          dest = as.factor(dest), 
@@ -29,65 +34,41 @@ flights_sample <- flights_sample %>%
          engine = as.factor(engine),
          name = as.factor(name))
 
-Repeats <- 50
+Repeats <- 100
 cv_repeat_num <- Repeats/20
-results <- []
-results_naive <- []
-
-for (j_naive in 0:(cv_repeat_num -1)) {
-  cv_group <- sample(1:20, nrow(flights_sample), replace = T)
-  for (i_naive in 1:20) {
-   flightTrain <- flights_sample[cv_group != i_naive,]
-   flightTest <- flights_sample[cv_group == i_naive,] 
-   flights.full.model <- glm(arr_delay_cat ~ month.x + day.x + dep_time + sched_dep_time + dep_delay +   arr_time + sched_arr_time + flight  + origin + distance + hour.x + minute + type + engines + seats + speed  +
-                               temp + dewp + humid + wind_dir + wind_speed + wind_gust + precip + pressure + visib + lat + lon, data = flightTrain, family = binomial())
-   predict_full <- predict(flights.full.model, newdata = flightTest, type = "response")
-    pred_f <- prediction(predict_full, flightTest$arr_delay_cat)
-    auc_f <- performance(pred_f, measure = "auc")
-    if (i_naive == 1 & j_naive == 0) {
-      results_naive <- c(auc_f = auc_f@y.values[[1]])
-    }
-    else {
-    results_naive <- append(results_naive, c(auc_f = auc_f@y.values[[1]]), after = length(results_naive))
-    }
-   
-  }
-}
 
 for (j in 0:(cv_repeat_num -1)) {
   cv_group <- sample(1:20, nrow(flights_sample), replace = T)
   for (i in 1:20) {
     flightTrain <- flights_sample[cv_group != i,]
     flightTest <- flights_sample[cv_group == i,]
-    form <- arr_delay_cat ~ dep_delay + wind_gust + season + wday + precip
-    flights.my.model <- glm(form, data = flightTrain, family = binomial())
+    form <- arr_delay_cat ~ dep_delay + wind_gust + season + wday + precip  + origin + visib
+    flights.my.model <- glm(form, data = na.omit(flightTrain), family = binomial())
     
     predict_step <- predict(flights.my.model, newdata = flightTest, type = "response")
     pred_s <- prediction(predict_step, flightTest$arr_delay_cat)
     auc_s <- performance(pred_s, measure = "auc")
     
-    if (i == 1 & j == 0) {
-      results <- c(auc_s = auc_s@y.values[[1]])
-    }
-    else {
+    if (i == 1 & j == 0) { results <- c(auc_s = auc_s@y.values[[1]])}
     results <- append(results, c(auc_s = auc_s@y.values[[1]]), after = length(results))
-    }
    
   }
 }
 cv_stat <- mean(results)
-
+print(cv_stat)
 threshold = 0.5
 flightTest <- flightTest %>% 
-  mutate(arr_delay_pred = ifelse(predict_step > 0.5, 1, 0))
+    mutate(arr_delay_pred = ifelse(predict_step > 0.5, 1, 0),
+           arr_delay_cat = as.factor(arr_delay_cat))
 flightTest <- flightTest %>% 
   mutate(TP = ifelse(arr_delay_cat == 1 & arr_delay_pred == 1, 1, 0),
          FP = ifelse(arr_delay_cat == 0 & arr_delay_pred == 1, 1, 0),
          TN = ifelse(arr_delay_cat == 0 & arr_delay_pred == 0, 1, 0), 
          FN = ifelse(arr_delay_cat == 1 & arr_delay_pred == 0, 1, 0))
-pred = predict(flights.my.model, newdata=flightTest)
+pred <- predict(flights.my.model, newdata=flightTest, type = "response")
+pred <- ifelse(pred > 0.5, 1,0)
 accuracy <- table(pred, flightTest[,"arr_delay_cat"])
-sum(diag(accuracy))/sum(accuracy)
+acc <- sum(diag(accuracy))/sum(accuracy)
 
 confusionMatrix(data=pred, flightTest$arr_delay_cat)
 
