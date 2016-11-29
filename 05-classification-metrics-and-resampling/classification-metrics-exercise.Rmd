@@ -5,6 +5,7 @@ date: "11/08/2016"
 output: html_document
 ---
 
+<<<<<<< HEAD
 The Flights Data ; 
 
 1. Read in the Flights Data
@@ -13,6 +14,11 @@ The Flights Data ;
 4. Knit the document and submit both the this file Rmd and html files.
 
 Show All Work! 
+=======
+Using the first **logistic regression** model that you created in previous exercise; 
+
+1. Partition the model into Test and Training Sets using only `base::sample` 
+>>>>>>> c0e49b99fba8263cda933bb4efffc7dd6b4352e0
 
 ```{r}
 library(dplyr)
@@ -34,6 +40,7 @@ flights_sample <- flights_sample %>%
          engine = as.factor(engine),
          name = as.factor(name))
 
+<<<<<<< HEAD
 Repeats <- 100
 cv_repeat_num <- Repeats/20
 
@@ -72,10 +79,17 @@ acc <- sum(diag(accuracy))/sum(accuracy)
 
 confusionMatrix(data=pred, flightTest$arr_delay_cat)
 
+=======
+>>>>>>> c0e49b99fba8263cda933bb4efffc7dd6b4352e0
 ```
 
+2. Re-train the model on the training data 
 
-Using the `predict` function and `test` data, write functions to calculate and 
+```{r}
+
+```
+
+3. Using the `predict` function and `test` data, write functions to calculate and 
 calculate: 
 
 * Misclassification Rate
