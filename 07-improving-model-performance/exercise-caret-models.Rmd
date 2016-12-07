@@ -1,9 +1,43 @@
 ---
 title: "Improving Model Perfromance / Tuning Parameters"
-author: "Your Name"
+author: "Shibani Misra"
 date: "`r Sys.Date()`"
 output: html_document
 ---
+## Defining Libraries
+```
+library(caret)
+library(VGAM)
+library(dplyr)
+library(C50)
+library(randomForest)
+library(rpart)
+library(adabag)
+library(gbm)
+library(e1071)
+```
+
+## Preparing Data
+```
+flights_sample <- flights[sample(nrow(flights), 5000, replace = FALSE),]
+flights1 <- flights_sample %>% 
+  select(month.x, day.x, dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time, arr_delay, carrier,
+         origin, distance, hour.x, minute, temp, dewp, humid,  
+         wind_speed, wind_gust, precip, visib, season, wday, arr_delay_cat)
+  colnames(flights1) <- c("month", "day", "dep_time", "sched_dep_time", "dep_delay", "arr_time", 
+                         "sched_arr_time", "arr_delay", "carrier", "origin", 
+                         "distance", "hour", "minute", "temp", "dewp", "humid", "wind_speed",
+                         "wind_gust", "precip", "visib", "season", "wday", "arr_delay_cat")
+flights2 <- flights1 %>% 
+  filter(!is.na(visib)) %>% 
+  filter(!is.na(wind_speed)) %>% 
+  filter(!is.na(dewp)) %>% 
+  mutate(arr_delay_gt15 = as.factor(ifelse(arr_delay_cat == 0, "no", "yes")),
+         carrier = as.factor(carrier),
+         origin = as.factor(origin)) 
+
+flights2 <- flights2[-23]
+```
 
 
 ## Tuning Parameter
@@ -11,7 +45,19 @@ output: html_document
 Generically and regardless of model type, what are the purposes of a model
 tuning parameters?
 
+Model tuning parameters are needed to help the machine learning model work in an optimal way to achieve the best possible results. 
+
 ```
+grid_glm <- expand.grid(parallel = FALSE, link = "loge")
+mtry <- sqrt(ncol(flights2))
+grid_rf <- expand.grid(.mtry=mtry)
+grid_c50 <- expand.grid(trials = 1, model = "tree", winnow = FALSE)
+grid_knn <- expand.grid(.k = 66)
+grid_rpart <- expand.grid(.cp = 0.02)
+grid_adaBoost <- expand.grid(.mfinal = 50 , .maxdepth = 5, .coeflearn = 'Breiman' )
+
+
+
 ```
 
 ## Caret Models
@@ -37,17 +83,48 @@ Save the caret objects with the names provided.
 
 # Your work here.
 
-fit.glm <- ..
-fit.knn <- ..
-fit.rpart <- ..
-fit.rf <- ..
-fit.myown1 <- ..
-fit.myown1 <- ..
+# define training_control
+set.seed(12345)
+train_control <- trainControl(method = "repeatedcv", number = 10, repeats = 3, classProbs = TRUE)
+
+
+# train the model
+#fit.glm <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control, 
+#                 method = "vglmAdjCat", tunegrid = grid_glm, metric = "Kappa")
+fit.rf <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control, 
+                 method = "rf", tunegrid = grid_rf, metric = "Kappa")
+fit.c50 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control, 
+                 method = "C5.0", tunegrid = grid_c50, metric = "Kappa")
+fit.knn <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
+                 method = "knn", preProcess = c("center", "scale"),
+                 tuneLength = 66, metric = "Kappa")
+#fit.rpart <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control, 
+#                   method = "rpart", tunegrid = grid_rpart, metric = "Kappa")
+fit.adaBoost<- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
+                 method = "AdaBoost.M1", preProcess = c("center", "scale"),
+                 tunegrid = grid_adaBoost, metric = "Kappa")				   
+fit.mymodel1 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
+                 method = "gbm", preProcess = c("center", "scale"), metric = "Kappa")
+fit.mymodel2 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
+                 method = "svmRadialWeights", preProcess = c("center", "scale"), metric = "Kappa")
+
+# collect resamples
+
+results <- resamples(list(RF=fit.rf, C50 = fit.c50, KNN = fit.knn, ADA = fit.adaBoost, GBM = fit.mymodel1, SVM=fit.mymodel2))
+# summarize the distributions
+summary(results)
+# boxplots of results
+bwplot(results)
+# dot plots of results
+dotplot(results)
+
 ```
 
 Compare the  models?
+For me, glm and rpart are not working using caret package.
+Random Forest worked the best for me for an mtry value of 23 (using all parameters)
 
 Which is best?  Why?
-
+Random Forest worked the best for me for an mtry value of 23 (using all parameters)
 ```
 ```
