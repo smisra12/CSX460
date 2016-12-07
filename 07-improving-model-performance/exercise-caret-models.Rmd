@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 ## Defining Libraries
-```
+```{r}
 library(caret)
 library(VGAM)
 library(dplyr)
@@ -18,7 +18,7 @@ library(e1071)
 ```
 
 ## Preparing Data
-```
+```{r}
 flights_sample <- flights[sample(nrow(flights), 5000, replace = FALSE),]
 flights1 <- flights_sample %>% 
   select(month.x, day.x, dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time, arr_delay, carrier,
@@ -47,7 +47,7 @@ tuning parameters?
 
 Model tuning parameters are needed to help the machine learning model work in an optimal way to achieve the best possible results. 
 
-```
+```{r}
 grid_glm <- expand.grid(parallel = FALSE, link = "loge")
 mtry <- sqrt(ncol(flights2))
 grid_rf <- expand.grid(.mtry=mtry)
@@ -79,7 +79,7 @@ for arr_delay >= 15 minutes.
 
 Save the caret objects with the names provided.
 
-```
+```{r}
 
 # Your work here.
 
@@ -118,7 +118,7 @@ Random Forest worked the best for me for an mtry value of 23 (using all paramete
 
 Which is best?  Why?
 Random Forest worked the best for me for an mtry value of 23 (using all parameters)
-```
+```{r}
 # collect resamples
 
 results <- resamples(list(RF=fit.rf, C50 = fit.c50, KNN = fit.knn, ADA = fit.adaBoost, GBM = fit.mymodel1, SVM=fit.mymodel2))
