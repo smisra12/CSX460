@@ -79,7 +79,7 @@ for arr_delay >= 15 minutes.
 
 Save the caret objects with the names provided.
 
-```{r}
+```
 
 # Your work here.
 
@@ -108,15 +108,7 @@ fit.mymodel1 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_cont
 fit.mymodel2 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
                  method = "svmRadialWeights", preProcess = c("center", "scale"), metric = "Kappa")
 
-# collect resamples
 
-results <- resamples(list(RF=fit.rf, C50 = fit.c50, KNN = fit.knn, ADA = fit.adaBoost, GBM = fit.mymodel1, SVM=fit.mymodel2))
-# summarize the distributions
-summary(results)
-# boxplots of results
-bwplot(results)
-# dot plots of results
-dotplot(results)
 
 ```
 
@@ -127,4 +119,14 @@ Random Forest worked the best for me for an mtry value of 23 (using all paramete
 Which is best?  Why?
 Random Forest worked the best for me for an mtry value of 23 (using all parameters)
 ```
+# collect resamples
+
+results <- resamples(list(RF=fit.rf, C50 = fit.c50, KNN = fit.knn, ADA = fit.adaBoost, GBM = fit.mymodel1, SVM=fit.mymodel2))
+# summarize the distributions
+summary(results)
+# boxplots of results
+bwplot(results)
+# dot plots of results
+dotplot(results)
+
 ```
