@@ -15,11 +15,13 @@ library(rpart)
 library(adabag)
 library(gbm)
 library(e1071)
+library(kernlab)
 ```
 
 ## Preparing Data
 ```{r}
-flights_sample <- flights[sample(nrow(flights), 5000, replace = FALSE),]
+load("C:/Users/smisra/Documents/Personal/Personal/flights.Rda")
+flights_sample <- flights[sample(nrow(flights), 1000, replace = FALSE),]
 flights1 <- flights_sample %>% 
   select(month.x, day.x, dep_time, sched_dep_time, dep_delay, arr_time, sched_arr_time, arr_delay, carrier,
          origin, distance, hour.x, minute, temp, dewp, humid,  
@@ -54,7 +56,7 @@ grid_rf <- expand.grid(.mtry=mtry)
 grid_c50 <- expand.grid(trials = 1, model = "tree", winnow = FALSE)
 grid_knn <- expand.grid(.k = 66)
 grid_rpart <- expand.grid(.cp = 0.02)
-grid_adaBoost <- expand.grid(.mfinal = 50 , .maxdepth = 5, .coeflearn = 'Breiman' )
+grid_adaBoost <- expand.grid(.mfinal = 5 , .maxdepth = 5, .coeflearn = 'Breiman' )
 
 
 
@@ -100,9 +102,8 @@ fit.knn <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
                  tuneLength = 66, metric = "Kappa")
 #fit.rpart <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control, 
 #                   method = "rpart", tunegrid = grid_rpart, metric = "Kappa")
-fit.adaBoost<- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
-                 method = "AdaBoost.M1", preProcess = c("center", "scale"),
-                 tunegrid = grid_adaBoost, metric = "Kappa")				   
+#fit.adaBoost<- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
+#                 method = "AdaBoost.M1", metric = "Kappa")				   
 fit.mymodel1 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
                  method = "gbm", preProcess = c("center", "scale"), metric = "Kappa")
 fit.mymodel2 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_control,
@@ -114,6 +115,7 @@ fit.mymodel2 <- train(arr_delay_gt15 ~., data = flights2, trControl = train_cont
 
 Compare the  models?
 For me, glm and rpart are not working using caret package.
+AdaBoost.M1 was extremely slow so had to comment it out.
 Random Forest worked the best for me for an mtry value of 23 (using all parameters)
 
 Which is best?  Why?
@@ -121,7 +123,7 @@ Random Forest worked the best for me for an mtry value of 23 (using all paramete
 ```{r}
 # collect resamples
 
-results <- resamples(list(RF=fit.rf, C50 = fit.c50, KNN = fit.knn, ADA = fit.adaBoost, GBM = fit.mymodel1, SVM=fit.mymodel2))
+results <- resamples(list(RF=fit.rf, C50 = fit.c50, KNN = fit.knn, GBM = fit.mymodel1, SVM=fit.mymodel2))
 # summarize the distributions
 summary(results)
 # boxplots of results
